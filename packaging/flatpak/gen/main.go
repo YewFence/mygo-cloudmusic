@@ -15,6 +15,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 )
 
@@ -72,7 +73,9 @@ type section struct {
 
 // changelogReleases takes the "## x.y.z" sections of the changelog, in
 // order, dating each by its tag: an undated version would end up in
-// appstream data with a made-up date.
+// appstream data with a made-up date. A version whose tag is not in the
+// clone, which is the case for the versions a release introduces, is
+// dated by the commit that added its heading to the changelog instead.
 func changelogReleases() []section {
 	text, err := os.ReadFile("CHANGELOG.md")
 	if err != nil {
@@ -82,11 +85,11 @@ func changelogReleases() []section {
 	var cur *section
 	for _, line := range strings.Split(string(text), "\n") {
 		if v, ok := strings.CutPrefix(line, "## "); ok {
-			date, err := exec.Command("git", "log", "-1", "--format=%as", "v"+v).Output()
+			date, err := releaseDate(v)
 			if err != nil {
-				fail(fmt.Errorf("tag v%s: %w", v, err))
+				fail(err)
 			}
-			sections = append(sections, section{version: v, date: strings.TrimSpace(string(date))})
+			sections = append(sections, section{version: v, date: date})
 			cur = &sections[len(sections)-1]
 			continue
 		}
@@ -98,6 +101,25 @@ func changelogReleases() []section {
 		fail(fmt.Errorf("no \"## version\" sections in CHANGELOG.md"))
 	}
 	return sections
+}
+
+// releaseDate returns the date of a version's release: the date of its
+// tag, or, when the tag is not in the clone, the date of the commit
+// that added the version's heading to the changelog.
+func releaseDate(version string) (string, error) {
+	if out, err := exec.Command("git", "log", "-1", "--format=%as", "v"+version).Output(); err == nil {
+		return strings.TrimSpace(string(out)), nil
+	}
+	pattern := "^## " + regexp.QuoteMeta(version) + "$"
+	out, err := exec.Command("git", "log", "-1", "--format=%as", "-G", pattern, "--", "CHANGELOG.md").Output()
+	if err != nil {
+		return "", fmt.Errorf("version %s: %w", version, err)
+	}
+	date := strings.TrimSpace(string(out))
+	if date == "" {
+		return "", fmt.Errorf("version %s: neither a tag nor a changelog commit", version)
+	}
+	return date, nil
 }
 
 // write copies src into _build as name, @NAME@/@VERSION@ filled in when

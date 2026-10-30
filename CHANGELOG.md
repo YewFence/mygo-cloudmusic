@@ -1,5 +1,13 @@
 # 更新日志
 
+## 0.1.22
+
+- 修复 CI 上 Flatpak 构建失败：改用 Flathub 官方 builder，Ubuntu 自带的 flatpak-builder 对 freedesktop 25.08 SDK 来说太旧，构建依赖模块时会找错库目录
+
+## 0.1.21
+
+- Linux 新增 Flatpak 安装方式：release 页提供 x86_64 与 arm64 的单文件捆绑包（附 SHA256SUMS），`flatpak install --bundle` 即可离线安装，无需添加软件源
+
 ## 0.1.20
 
 - 正在播放新增「选歌」：待播清单里的歌以封面墙铺开，可拖动、甩动或用触控板滑动浏览，播放时每排封面随音乐左右摆动，点封面即播放这首歌
