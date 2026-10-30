@@ -57,6 +57,11 @@ jobs:
       - uses: actions/checkout@v7
         with:
           submodules: recursive
+          # The flatpak build dates each version of the changelog by its
+          # tag, or, for a tag the clone does not have, by the commit
+          # that added the version to the changelog: both need the
+          # history, which a shallow clone does not have.
+          fetch-depth: 0
       - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
@@ -104,11 +109,19 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           sudo apt-get update
-          sudo apt-get install -y flatpak flatpak-builder
+          sudo apt-get install -y flatpak dbus-x11
           flatpak --user remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+          # Ubuntu's flatpak-builder (1.4.2 on noble) predates the freedesktop
+          # 25.08 SDK's libdir layout, so modules land in /app/lib64 where no
+          # other module looks (flathub/shared-modules#330); Flathub's own
+          # builder is current.
+          flatpak --user install -y flathub org.flatpak.Builder
           packaging/flatpak/prepare.sh
           cd packaging/flatpak
-          flatpak-builder --arch "${{ matrix.flatpak-arch }}" --user --install-deps-from=flathub \
+          # dbus-launch gives flatpak a session bus: without one, installing
+          # the SDK dependency tries to autolaunch over X11, absent on a
+          # headless runner.
+          dbus-launch flatpak run org.flatpak.Builder --arch "${{ matrix.flatpak-arch }}" --user --install-deps-from=flathub \
             --force-clean --repo=repo build dev.egoist.cloudmusic.yaml
           version="$(jq -r .version ../../mygo.json)"
           flatpak build-bundle repo "dev.egoist.cloudmusic-$version-${{ matrix.flatpak-arch }}.flatpak" \
@@ -124,7 +137,7 @@ jobs:
           gh release upload "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" \
             dev.egoist.cloudmusic-*.flatpak "SHA256SUMS-flatpak-${{ matrix.flatpak-arch }}" --clobber
       - name: Build and upload
-        if: matrix.name != 'Flatpak'
+        if: ${{ !startsWith(matrix.name, 'Flatpak') }}
         env:
           GH_TOKEN: ${{ github.token }}
           MYGO_UPDATER_PRIVATE_KEY: ${{ secrets.MYGO_UPDATER_PRIVATE_KEY }}
