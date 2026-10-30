@@ -57,6 +57,11 @@ jobs:
       - uses: actions/checkout@v7
         with:
           submodules: recursive
+          # The flatpak build dates each version of the changelog by its
+          # tag, or, for a tag the clone does not have, by the commit
+          # that added the version to the changelog: both need the
+          # history, which a shallow clone does not have.
+          fetch-depth: 0
       - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
