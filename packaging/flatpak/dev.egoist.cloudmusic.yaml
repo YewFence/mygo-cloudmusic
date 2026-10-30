@@ -1,0 +1,76 @@
+{
+  "id": "dev.egoist.cloudmusic",
+  "runtime": "org.freedesktop.Platform",
+  "runtime-version": "25.08",
+  "sdk": "org.freedesktop.Sdk",
+  "command": "mygo-cloudmusic",
+  "separate-locales": false,
+  "finish-args": [
+    "--share=network",
+    "--socket=pulseaudio",
+    "--socket=fallback-x11",
+    "--socket=wayland",
+    "--device=dri",
+    "--talk-name=org.freedesktop.Notifications",
+    "--talk-name=org.freedesktop.secrets",
+    "--talk-name=org.kde.StatusNotifierWatcher",
+    "--talk-name=org.kde.kwalletd5",
+    "--talk-name=org.kde.kwalletd6",
+    "--own-name=org.mpris.MediaPlayer2.MyGo____.*",
+    "--env=MYGO_ENV=production"
+  ],
+  "modules": [
+    "shared-modules/libayatana-appindicator/libayatana-appindicator-gtk3.json",
+    {
+      "name": "mygo-cloudmusic",
+      "buildsystem": "simple",
+      "build-options": {
+        "env": {
+          "GOROOT": "/run/build/mygo-cloudmusic/.go-toolchain",
+          "GOTOOLCHAIN": "local",
+          "GOFLAGS": "-mod=vendor",
+          "GOCACHE": "/tmp/gocache",
+          "GOPATH": "/tmp/gopath"
+        }
+      },
+      "sources": [
+        {
+          "type": "dir",
+          "path": "../..",
+          "skip": [
+            ".git",
+            ".agents",
+            ".github",
+            "build",
+            "packaging",
+            "website",
+            "bun.lock",
+            "package.json",
+            "node_modules",
+            "vendor"
+          ]
+        },
+        {"type": "dir", "path": "../../vendor", "dest": "vendor"},
+        {"type": "dir", "path": "_build"},
+        {"type": "dir", "path": "icons"},
+        {
+          "type": "archive",
+          "url": "https://go.dev/dl/go1.27.3.linux-amd64.tar.gz",
+          "sha256": "65efbc80fdc1fa2cd2631cad5b481777a68e8725f34e89f50fc6ac714e379b40",
+          "only-arches": ["x86_64"],
+          "dest": ".go-toolchain"
+        },
+        {
+          "type": "archive",
+          "url": "https://go.dev/dl/go1.27.3.linux-arm64.tar.gz",
+          "sha256": "a06e99309dbcbdca1a8ccd2282c3ee146e55930886e26b4f1193269587165f49",
+          "only-arches": ["aarch64"],
+          "dest": ".go-toolchain"
+        }
+      ],
+      "build-commands": [
+        "sh build.sh"
+      ]
+    }
+  ]
+}
