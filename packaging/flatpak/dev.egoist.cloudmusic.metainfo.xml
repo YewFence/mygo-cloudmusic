@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>dev.egoist.cloudmusic</id>
+  <name>MyGo 云音乐</name>
+  <summary>第三方网易云音乐桌面客户端</summary>
+  <developer id="dev.egoist">
+    <name>xinyu zeng</name>
+  </developer>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>AGPL-3.0</project_license>
+  <url type="homepage">https://github.com/egoist/mygo-cloudmusic</url>
+  <url type="bugtracker">https://github.com/egoist/mygo-cloudmusic/issues</url>
+  <launchable type="desktop-id">dev.egoist.cloudmusic.desktop</launchable>
+  <recommends>
+    <control>pointing</control>
+    <control>keyboard</control>
+    <control>touch</control>
+  </recommends>
+  <description>
+    <p>用 Go 和 MyGo 写的第三方网易云音乐桌面客户端，原生界面，无 WebView。</p>
+    <ul>
+      <li>扫码登录，登录态保存在系统凭据存储中</li>
+      <li>每日推荐、推荐歌单、排行榜、我的歌单</li>
+      <li>搜索单曲、歌手、专辑、用户与播客，输入时显示搜索建议</li>
+      <li>私人 FM 与心动模式，边下边播，支持无损（FLAC）与 Hi-Res 音质</li>
+      <li>逐字歌词与翻译，正在播放页的「律动」视图与歌曲评论</li>
+      <li>播客：浏览与收听节目，在本机把节目转写成字幕</li>
+      <li>听过的歌曲缓存在本机，退出后再打开从上次的进度继续</li>
+    </ul>
+    <p>本项目与网易云音乐官方无关，音乐版权归各权利人所有。</p>
+  </description>
+  <releases>
+  </releases>
+  <content_rating type="oars-1.1">
+    <content_attribute id="social-chat">intense</content_attribute>
+    <content_attribute id="social-audio">intense</content_attribute>
+    <content_attribute id="money-purchasing">intense</content_attribute>
+  </content_rating>
+</component>

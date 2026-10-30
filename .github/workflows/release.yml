@@ -51,14 +51,21 @@ jobs:
           - { name: macOS, os: macos-latest, platform: "darwin/arm64,darwin/amd64" }
           - { name: Windows, os: ubuntu-latest, platform: "windows/amd64,windows/arm64" }
           - { name: Linux, os: ubuntu-latest, platform: "linux/amd64,linux/arm64" }
+          - { name: Flatpak, os: ubuntu-latest, platform: "", flatpak-arch: x86_64 }
+          - { name: FlatpakArm, os: ubuntu-24.04-arm, platform: "", flatpak-arch: aarch64 }
     steps:
       - uses: actions/checkout@v7
+        with:
+          submodules: recursive
       - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
       - name: Install NSIS, for the Windows installers
         if: matrix.name == 'Windows'
         run: sudo apt-get update && sudo apt-get install -y nsis
+      - name: Generate the vendor directory, for the Flatpak build
+        if: startsWith(matrix.name, 'Flatpak')
+        run: go mod vendor
       # The certificate signs the app; the notary profile, "notary" in
       # mygo.json, notarizes its disk image. Both go in a keychain of the
       # job, made the default one, where codesign and notarytool look.
@@ -85,7 +92,39 @@ jobs:
           security default-keychain -d user -s "$keychain"
           xcrun notarytool store-credentials notary --keychain "$keychain" \
             --apple-id "$APPLE_ID" --team-id "$APPLE_TEAM_ID" --password "$APPLE_APP_PASSWORD"
+      # Flatpak builds in its own sandbox from the manifest, fed by a
+      # prepare step that derives the package's version metadata (the
+      # ldflags and the metainfo's releases) from mygo.json and
+      # CHANGELOG.md, so a release needs no step of its own beyond writing
+      # the changelog. The result is a single-file bundle per arch, with
+      # checksums, users install without a remote.
+      - name: Build the Flatpak bundle
+        if: startsWith(matrix.name, 'Flatpak')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y flatpak flatpak-builder
+          flatpak --user remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+          packaging/flatpak/prepare.sh
+          cd packaging/flatpak
+          flatpak-builder --arch "${{ matrix.flatpak-arch }}" --user --install-deps-from=flathub \
+            --force-clean --repo=repo build dev.egoist.cloudmusic.yaml
+          version="$(jq -r .version ../../mygo.json)"
+          flatpak build-bundle repo "dev.egoist.cloudmusic-$version-${{ matrix.flatpak-arch }}.flatpak" \
+            dev.egoist.cloudmusic master
+          sha256sum "dev.egoist.cloudmusic-$version-${{ matrix.flatpak-arch }}.flatpak" \
+            > "SHA256SUMS-flatpak-${{ matrix.flatpak-arch }}"
+      - name: Upload the Flatpak bundle
+        if: startsWith(matrix.name, 'Flatpak')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cd packaging/flatpak
+          gh release upload "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" \
+            dev.egoist.cloudmusic-*.flatpak "SHA256SUMS-flatpak-${{ matrix.flatpak-arch }}" --clobber
       - name: Build and upload
+        if: matrix.name != 'Flatpak'
         env:
           GH_TOKEN: ${{ github.token }}
           MYGO_UPDATER_PRIVATE_KEY: ${{ secrets.MYGO_UPDATER_PRIVATE_KEY }}

@@ -3,3 +3,9 @@
 mygo_windows_*.syso
 /netease-music-mygo
 /node_modules/
+/vendor/
+/packaging/flatpak/build/
+/packaging/flatpak/repo/
+/packaging/flatpak/.flatpak-builder/
+*.flatpak
+/packaging/flatpak/_build/
